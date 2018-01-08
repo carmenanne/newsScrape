@@ -18,33 +18,38 @@ app.use(bodyParser.urlencoded({extended: false}));
 
 app.use(express.static('public'));
 
+var exphbs = require('express-handlebars');
+
+app.engine("handlebars", exphbs({ defaultLayout: 'main'}));
+app.set("view engine", "handlebars");
+
+var MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost/newsscrape';
+
 mongoose.Promise = Promise;
-mongoose.connect('mongodb://localhost/newsscrape', {
+mongoose.connect(MONGODB_URI, {
 	useMongoClient: true
 });
+
 
 app.get('/scrape', function(req, res){
 	axios.get('https://www.npr.org/sections/news/').then(function(response){
 		var $ = cheerio.load(response.data);
 
 		$('article div h2').each(function(i, element){
-			// console.log(response.data.article + ' line 31')
 
 			var result = {};
 
 			result.title = $(this)
 				.children('a')
 				.text();
-				console.log(result.title + ' line 38')
 			result.link = $(this)
 				.children('a')
 				.attr('href');
-				console.log(result.link + ' line 42')
 			// result.summary = $(this.p)
 			// 	.children('a')
 			// 	.text();
 			// 	console.log(result.summary + 'line 46')
-			db.Article
+			db.Article					
 				.create(result)
 				.then(function(dbArticle){
 					// res.send('Scrape Complete');
@@ -71,7 +76,7 @@ app.get('/articles', function(req, res){
 
 app.get('/articles/:id', function(req, res){
 	db.Article.findOne({_id: req.params.id})
-		.populate('note')
+		.populate('Note')
 		.then(function(dbArticle){
 			res.json(dbArticle)
 		})
@@ -81,7 +86,7 @@ app.get('/articles/:id', function(req, res){
 });
 
 app.post('/articles/:id', function(req, res){
-	db.note
+	db.Note
 		.create(req.body)
 		.then(function(dbNote){
 			res.json(dbArticle)
